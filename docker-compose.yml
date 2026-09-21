@@ -1,0 +1,19 @@
+services:
+  fta-ops-dashboard:
+    build: .
+    image: fta-ops-dashboard:latest
+    container_name: fta-ops-dashboard
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      PORT: 3000
+      INGEST_API_KEY: ${INGEST_API_KEY}
+      DASHBOARD_USER: ${DASHBOARD_USER}
+      DASHBOARD_PASS: ${DASHBOARD_PASS}
+      DATA_DIR: /app/data
+    volumes:
+      - fta-ops-data:/app/data
+
+volumes:
+  fta-ops-data:

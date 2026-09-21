@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Portail d'exploitation FTA</title>
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+<div class="app">
+  <header class="top">
+    <div>
+      <h1>Portail d'exploitation FTA</h1>
+      <div class="subtitle" id="last-refresh">Chargement…</div>
+    </div>
+    <div class="toolbar">
+      <select id="range-select" class="range-select">
+        <option value="24h">24 dernières heures</option>
+        <option value="7d">7 derniers jours</option>
+        <option value="30d">30 derniers jours</option>
+        <option value="90d">90 derniers jours</option>
+      </select>
+      <button id="theme-toggle" class="theme-toggle" type="button">🌓 Thème</button>
+    </div>
+  </header>
+
+  <section class="panel">
+    <h2>Connecteurs MCP</h2>
+    <div class="panel-sub">État en direct — remplace le récapitulatif email quotidien</div>
+    <div class="status-grid" id="connectors-grid"></div>
+  </section>
+
+  <section class="panel">
+    <h2>Infrastructure — autres services</h2>
+    <div class="panel-sub">Services supervisés hors connecteurs MCP</div>
+    <div class="status-grid" id="infra-services-grid"></div>
+  </section>
+
+  <section class="panel">
+    <h2>VPN Tailscale</h2>
+    <div class="panel-sub">État des nœuds / sidecars Tailscale</div>
+    <div class="status-grid" id="vpn-grid"></div>
+  </section>
+
+  <section class="panel">
+    <h2>Serveur QNAP</h2>
+    <div class="panel-sub">Charge, stockage et état des sauvegardes</div>
+    <div class="kpi-row" id="qnap-summary"></div>
+    <div class="charts-row">
+      <div class="chart-block">
+        <div class="chart-title">CPU (%)</div>
+        <div id="qnap-cpu-chart"></div>
+      </div>
+      <div class="chart-block">
+        <div class="chart-title">RAM (%)</div>
+        <div id="qnap-ram-chart"></div>
+      </div>
+      <div class="chart-block">
+        <div class="chart-title">Utilisation disque (%)</div>
+        <div id="qnap-disk-chart"></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <h2>Coût des tokens LLM</h2>
+    <div class="panel-sub">Suivi de la consommation et du coût des modèles utilisés</div>
+    <div class="kpi-row" id="tokens-kpis"></div>
+    <div class="charts-row">
+      <div class="chart-block">
+        <div class="chart-title">Coût quotidien</div>
+        <div id="tokens-daily-chart"></div>
+      </div>
+      <div class="chart-block">
+        <div class="chart-title">Coût par modèle</div>
+        <div id="tokens-model-chart"></div>
+      </div>
+    </div>
+    <div style="margin-top:16px" id="tokens-source-table"></div>
+  </section>
+
+  <section class="panel">
+    <h2>Historique des incidents</h2>
+    <div class="panel-sub">Connecteurs + VPN, période sélectionnée ci-dessus</div>
+    <div id="events-list"></div>
+  </section>
+
+  <footer class="app-footer">Portail d'exploitation FTA — données poussées par les scripts de supervision internes</footer>
+</div>
+
+<script src="/js/charts.js"></script>
+<script src="/js/app.js"></script>
+</body>
+</html>
