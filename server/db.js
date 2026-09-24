@@ -67,6 +67,33 @@ db.exec(`
     cost_usd REAL NOT NULL DEFAULT 0
   );
   CREATE INDEX IF NOT EXISTS idx_token_usage_time ON token_usage(recorded_at);
+
+  -- Tâches planifiées exécutées par des agents (ex: rapprochement factures,
+  -- relance commerciale). expected_interval_hours définit la cadence attendue ;
+  -- heartbeat_grace_minutes n'est renseigné que pour les jobs longs à phases,
+  -- pour détecter un blocage en cours d'exécution.
+  CREATE TABLE IF NOT EXISTS jobs (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    expected_interval_hours REAL NOT NULL DEFAULT 24,
+    grace_hours REAL NOT NULL DEFAULT 2,
+    heartbeat_grace_minutes REAL
+  );
+
+  CREATE TABLE IF NOT EXISTS job_runs (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    job_id TEXT NOT NULL,
+    run_key TEXT,
+    status TEXT NOT NULL DEFAULT 'running',
+    summary TEXT,
+    detail TEXT,
+    started_at TEXT NOT NULL,
+    finished_at TEXT,
+    last_heartbeat_at TEXT
+  );
+  CREATE INDEX IF NOT EXISTS idx_job_runs_job ON job_runs(job_id, started_at);
+  CREATE UNIQUE INDEX IF NOT EXISTS idx_job_runs_run_key
+    ON job_runs(job_id, run_key) WHERE run_key IS NOT NULL;
 `);
 
 module.exports = db;

@@ -15,6 +15,30 @@ function sinceIso(range) {
   return new Date(Date.now() - ms).toISOString();
 }
 
+// États possibles : 'never_run' | 'running' | 'stuck' | 'late' | 'fail' | 'ok'
+function computeJobState(job, lastRun, lastSuccess) {
+  const now = Date.now();
+  if (!lastRun) return 'never_run';
+
+  if (lastRun.status === 'running') {
+    const ref = lastRun.last_heartbeat_at || lastRun.started_at;
+    const staleMinutes = (now - new Date(ref).getTime()) / 60000;
+    if (job.heartbeat_grace_minutes && staleMinutes > job.heartbeat_grace_minutes) {
+      return 'stuck'; // en cours mais plus de battement depuis trop longtemps
+    }
+    return 'running';
+  }
+
+  const maxAllowedMs = (job.expected_interval_hours + job.grace_hours) * 3600000;
+  const isLate = !lastSuccess || (now - new Date(lastSuccess.started_at).getTime()) > maxAllowedMs;
+  const lastRunIsNewerFailure = lastRun.status === 'failure'
+    && (!lastSuccess || lastRun.started_at > lastSuccess.started_at);
+
+  if (lastRunIsNewerFailure) return 'fail';
+  if (isLate) return 'late';
+  return 'ok';
+}
+
 // --- Connecteurs & services ---
 
 router.get('/services', (req, res) => {
@@ -119,6 +143,35 @@ router.get('/tokens/summary', (req, res) => {
   `).all(since);
 
   res.json({ totals, byModel, bySource, daily });
+});
+
+// --- Tâches planifiées (agents) ---
+
+router.get('/jobs', (req, res) => {
+  const jobs = db.prepare('SELECT * FROM jobs ORDER BY name').all();
+  const result = jobs.map((job) => {
+    const lastRun = db.prepare(`
+      SELECT * FROM job_runs WHERE job_id = ? ORDER BY started_at DESC LIMIT 1
+    `).get(job.id);
+    const lastSuccess = db.prepare(`
+      SELECT * FROM job_runs WHERE job_id = ? AND status = 'success' ORDER BY started_at DESC LIMIT 1
+    `).get(job.id);
+    return {
+      ...job,
+      state: computeJobState(job, lastRun, lastSuccess),
+      last_run: lastRun || null,
+      last_success: lastSuccess || null,
+    };
+  });
+  res.json(result);
+});
+
+router.get('/jobs/:id/runs', (req, res) => {
+  const limit = Math.min(Number(req.query.limit) || 50, 500);
+  const runs = db.prepare(`
+    SELECT * FROM job_runs WHERE job_id = ? ORDER BY started_at DESC LIMIT ?
+  `).all(req.params.id, limit);
+  res.json(runs);
 });
 
 module.exports = router;

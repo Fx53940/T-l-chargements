@@ -27,6 +27,26 @@ function relativeTime(iso) {
   return `il y a ${Math.round(hours / 24)} j`;
 }
 
+const JOB_STATE_LABEL = {
+  ok: 'OK',
+  late: 'EN RETARD',
+  stuck: 'BLOQUÉ',
+  fail: 'ÉCHEC',
+  running: 'EN COURS',
+  never_run: 'JAMAIS EXÉCUTÉ',
+};
+const JOB_STATE_ICON = {
+  ok: '✓', late: '⏰', stuck: '⛔', fail: '✕', running: '↻', never_run: '–',
+};
+
+function durationSince(iso) {
+  const mins = Math.round((Date.now() - new Date(iso).getTime()) / 60000);
+  if (mins < 60) return `${mins} min`;
+  const hours = Math.floor(mins / 60);
+  const rest = mins % 60;
+  return `${hours} h${rest ? ` ${rest} min` : ''}`;
+}
+
 async function fetchJson(url) {
   const res = await fetch(url);
   if (!res.ok) throw new Error(`${url} -> ${res.status}`);
@@ -69,6 +89,44 @@ function renderEventList(el, events, nameField) {
       </span>
     </li>
   `).join('') + '</ul>';
+}
+
+async function loadJobs() {
+  const jobs = await fetchJson('/api/dashboard/jobs');
+  const el = document.getElementById('jobs-grid');
+  if (!jobs.length) {
+    el.innerHTML = '<div class="empty-state">Aucun agent planifié n\'a encore fait de rapport</div>';
+    return;
+  }
+  el.innerHTML = jobs.map((job) => {
+    const state = job.state;
+    const lastRun = job.last_run;
+    let meta;
+    if (state === 'never_run') {
+      meta = "Aucune exécution reçue";
+    } else if (state === 'running') {
+      meta = `Démarré il y a ${durationSince(lastRun.started_at)}`;
+    } else if (state === 'stuck') {
+      const ref = lastRun.last_heartbeat_at || lastRun.started_at;
+      meta = `Démarré il y a ${durationSince(lastRun.started_at)} · sans nouvelle depuis ${durationSince(ref)}`;
+    } else {
+      meta = `Dernière exécution ${relativeTime(lastRun.started_at)} · attendu tous les ${job.expected_interval_hours} h`;
+    }
+    const summary = lastRun && (lastRun.summary || lastRun.detail);
+    return `
+      <div class="job-card">
+        <div class="job-head">
+          <span class="status-dot ${state}"></span>
+          <span class="job-name">${job.name}</span>
+        </div>
+        <div class="job-meta">
+          <span class="status-text ${state}">${JOB_STATE_ICON[state]} ${JOB_STATE_LABEL[state]}</span>
+          · ${meta}
+        </div>
+        ${summary ? `<div class="job-summary">${summary}</div>` : ''}
+      </div>
+    `;
+  }).join('');
 }
 
 async function loadServices() {
@@ -166,6 +224,7 @@ async function refreshAll() {
   const range = document.getElementById('range-select').value;
   document.getElementById('last-refresh').textContent = `Actualisé ${new Date().toLocaleTimeString('fr-FR')}`;
   await Promise.all([
+    loadJobs(),
     loadServices(),
     loadVpn(),
     loadEvents(range),

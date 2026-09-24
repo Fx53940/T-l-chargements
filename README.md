@@ -120,6 +120,73 @@ curl -X POST http://<host>:3000/api/ingest/token-usage \
   }'
 ```
 
+## Référence API — tâches planifiées (agents)
+
+Deux façons de déclarer une exécution, selon la forme du job.
+
+### Job court : un seul appel en fin d'exécution
+
+Adapté à un agent qui fait un travail ponctuel et rapporte le résultat une
+fois (ex. rapprochement bancaire/factures, une fois par jour).
+
+```bash
+curl -X POST http://<host>:3000/api/ingest/job-runs \
+  -H "Authorization: Bearer $INGEST_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "job_id": "rapprochement-factures",
+    "job_name": "Rapprochement transactions / factures",
+    "status": "success",
+    "summary": "312 transactions rapprochées, 4 écarts détectés",
+    "expected_interval_hours": 24
+  }'
+```
+
+`status` : `success` | `failure`. `expected_interval_hours` (défaut 24) ne
+doit être envoyé qu'une fois (ou à chaque appel, sans risque : c'est un
+upsert) — c'est ce qui permet au dashboard de savoir qu'une absence de
+rapport pendant plus de `expected_interval_hours + grace_hours` (2h par
+défaut) doit être signalée comme **EN RETARD**, même si l'agent ne se
+manifeste plus du tout.
+
+### Job long à phases : démarrage / battement / fin
+
+Adapté à un agent qui s'étale sur la journée (ex. relance commerciale par
+phases), où il faut aussi détecter un blocage en cours de route, pas
+seulement l'absence de rapport final.
+
+```bash
+# 1. Au démarrage
+RUN_KEY=$(curl -fsS -X POST "http://<host>:3000/api/ingest/job-runs/relance-commerciale/start" \
+  -H "Authorization: Bearer $INGEST_API_KEY" -H "Content-Type: application/json" \
+  -d '{
+    "job_name": "Relance commerciale prospects",
+    "expected_interval_hours": 24,
+    "heartbeat_grace_minutes": 180
+  }' | python3 -c "import sys,json;print(json.load(sys.stdin)['run_key'])")
+
+# 2. À chaque phase, un signal de vie (optionnel mais recommandé)
+curl -X POST "http://<host>:3000/api/ingest/job-runs/relance-commerciale/heartbeat" \
+  -H "Authorization: Bearer $INGEST_API_KEY" -H "Content-Type: application/json" \
+  -d "{\"run_key\":\"$RUN_KEY\",\"detail\":\"Phase 2/4 — relances email envoyées\"}"
+
+# 3. À la fin
+curl -X POST "http://<host>:3000/api/ingest/job-runs/relance-commerciale/finish" \
+  -H "Authorization: Bearer $INGEST_API_KEY" -H "Content-Type: application/json" \
+  -d "{\"run_key\":\"$RUN_KEY\",\"status\":\"success\",\"summary\":\"28 prospects relancés sur 4 phases\"}"
+```
+
+`heartbeat_grace_minutes` : si aucun battement n'arrive pendant plus de
+cette durée alors qu'une exécution est en cours, le job passe à
+**BLOQUÉ** — utile pour distinguer "il n'a pas encore fini aujourd'hui"
+(normal pour un job à phases) de "il s'est arrêté en silence au milieu".
+Ne pas renseigner ce champ pour un job court : sans lui, un job "en cours"
+reste simplement affiché comme tel, sans alerte de blocage.
+
+États affichés sur le dashboard : **OK**, **EN RETARD** (pas de succès
+récent), **BLOQUÉ** (en cours mais plus de battement), **ÉCHEC**, **EN
+COURS**, **JAMAIS EXÉCUTÉ**.
+
 ## Intégration avec les scripts de supervision existants
 
 > Section destinée à la session Claude qui a la main sur l'infrastructure

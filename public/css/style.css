@@ -154,6 +154,10 @@ section.panel .panel-sub {
 .status-dot.ok { background: var(--status-good); }
 .status-dot.fail { background: var(--status-critical); }
 .status-dot.unknown { background: var(--status-unknown); }
+.status-dot.late { background: var(--status-warning); }
+.status-dot.stuck { background: var(--status-serious); }
+.status-dot.running { background: var(--series-1); }
+.status-dot.never_run { background: var(--status-unknown); }
 
 .status-card .label {
   font-weight: 600;
@@ -165,6 +169,41 @@ section.panel .panel-sub {
 }
 .status-card .status-text.ok { color: var(--status-good-text); }
 .status-card .status-text.fail { color: var(--status-critical); }
+.status-card .status-text.late { color: var(--status-warning); }
+.status-card .status-text.stuck { color: var(--status-serious); }
+.status-card .status-text.running { color: var(--series-1); }
+.status-card .status-text.never_run { color: var(--text-muted); }
+
+.job-card {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 14px 16px;
+  background: var(--surface-2);
+}
+.job-card .job-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.job-card .job-name {
+  font-weight: 600;
+  font-size: 14px;
+}
+.job-card .job-meta {
+  color: var(--text-muted);
+  font-size: 11px;
+  margin-top: 6px;
+}
+.job-card .job-summary {
+  color: var(--text-secondary);
+  font-size: 12px;
+  margin-top: 6px;
+}
+.job-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 12px;
+}
 
 .kpi-row {
   display: grid;
