@@ -24,10 +24,6 @@ function statusText(status) {
   return status === 'ok' ? 'OK' : status === 'fail' ? 'ÉCHEC' : 'Inconnu';
 }
 
-function euros(v) {
-  return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'USD', maximumFractionDigits: 2 }).format(v || 0);
-}
-
 function relativeTime(iso) {
   if (!iso) return '—';
   const diffMs = Date.now() - new Date(iso).getTime();
@@ -188,46 +184,6 @@ async function loadQnap(range) {
     rows.map((r) => ({ x: r.recorded_at, y: r.disk_usage_pct })), { yFormat: (v) => `${Math.round(v)}%` });
 }
 
-async function loadTokens(range) {
-  const summary = await fetchJson(`/api/dashboard/tokens/summary?range=${range}`);
-  const totalTokens = (summary.totals.tokens_input || 0) + (summary.totals.tokens_output || 0);
-
-  document.getElementById('tokens-kpis').innerHTML = `
-    <div class="kpi"><div class="kpi-label">Coût total</div><div class="kpi-value">${euros(summary.totals.cost_usd)}</div></div>
-    <div class="kpi"><div class="kpi-label">Tokens entrée</div><div class="kpi-value">${(summary.totals.tokens_input || 0).toLocaleString('fr-FR')}</div></div>
-    <div class="kpi"><div class="kpi-label">Tokens sortie</div><div class="kpi-value">${(summary.totals.tokens_output || 0).toLocaleString('fr-FR')}</div></div>
-    <div class="kpi"><div class="kpi-label">Total tokens</div><div class="kpi-value">${totalTokens.toLocaleString('fr-FR')}</div></div>
-  `;
-
-  renderLineChart(document.getElementById('tokens-daily-chart'),
-    summary.daily.map((d) => ({ x: d.day, y: d.cost_usd })),
-    { yFormat: (v) => euros(v), xFormat: fmtDay });
-
-  renderBarChart(document.getElementById('tokens-model-chart'),
-    summary.byModel.map((m) => ({ label: m.model, value: m.cost_usd })),
-    { yFormat: (v) => euros(v) });
-
-  const bySourceTable = document.getElementById('tokens-source-table');
-  if (!summary.bySource.length) {
-    bySourceTable.innerHTML = '<div class="empty-state">Aucune donnée</div>';
-  } else {
-    bySourceTable.innerHTML = `
-      <table class="data-table">
-        <thead><tr><th>Source</th><th class="num">Tokens entrée</th><th class="num">Tokens sortie</th><th class="num">Coût</th></tr></thead>
-        <tbody>
-          ${summary.bySource.map((s) => `
-            <tr>
-              <td>${s.source}</td>
-              <td class="num">${s.tokens_input.toLocaleString('fr-FR')}</td>
-              <td class="num">${s.tokens_output.toLocaleString('fr-FR')}</td>
-              <td class="num">${euros(s.cost_usd)}</td>
-            </tr>
-          `).join('')}
-        </tbody>
-      </table>`;
-  }
-}
-
 async function refreshAll() {
   const range = document.getElementById('range-select').value;
   document.getElementById('last-refresh').textContent = `Actualisé ${new Date().toLocaleTimeString('fr-FR')}`;
@@ -237,7 +193,6 @@ async function refreshAll() {
     loadVpn(),
     loadEvents(range),
     loadQnap(range),
-    loadTokens(range),
   ]).catch((err) => console.error('Erreur de chargement du dashboard', err));
 }
 

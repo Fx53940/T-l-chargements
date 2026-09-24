@@ -114,26 +114,6 @@ router.post('/vpn-status', (req, res) => {
   res.status(201).json({ ok: true, statusChanged });
 });
 
-// POST /api/ingest/token-usage
-// Body: { source, model, tokens_input?, tokens_output?, cost_usd?, recorded_at? }
-router.post('/token-usage', (req, res) => {
-  const {
-    source, model, tokens_input = 0, tokens_output = 0, cost_usd = 0,
-  } = req.body || {};
-  const recordedAt = req.body?.recorded_at || nowIso();
-
-  if (!isNonEmptyString(source) || !isNonEmptyString(model)) {
-    return res.status(400).json({ error: 'Champs requis: source, model' });
-  }
-
-  db.prepare(`
-    INSERT INTO token_usage (recorded_at, source, model, tokens_input, tokens_output, cost_usd)
-    VALUES (?, ?, ?, ?, ?, ?)
-  `).run(recordedAt, source, model, tokens_input, tokens_output, cost_usd);
-
-  res.status(201).json({ ok: true });
-});
-
 // --- Tâches planifiées (agents) ---
 
 function upsertJob(id, name, opts = {}) {

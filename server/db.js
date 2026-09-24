@@ -57,17 +57,6 @@ db.exec(`
   );
   CREATE INDEX IF NOT EXISTS idx_vpn_events_node ON vpn_events(node_id, occurred_at);
 
-  CREATE TABLE IF NOT EXISTS token_usage (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    recorded_at TEXT NOT NULL,
-    source TEXT NOT NULL,
-    model TEXT NOT NULL,
-    tokens_input INTEGER NOT NULL DEFAULT 0,
-    tokens_output INTEGER NOT NULL DEFAULT 0,
-    cost_usd REAL NOT NULL DEFAULT 0
-  );
-  CREATE INDEX IF NOT EXISTS idx_token_usage_time ON token_usage(recorded_at);
-
   -- Tâches planifiées exécutées par des agents (ex: rapprochement factures,
   -- relance commerciale). expected_interval_hours définit la cadence attendue ;
   -- heartbeat_grace_minutes n'est renseigné que pour les jobs longs à phases,

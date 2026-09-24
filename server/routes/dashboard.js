@@ -103,48 +103,6 @@ router.get('/vpn/events', (req, res) => {
   res.json(events);
 });
 
-// --- Coûts tokens ---
-
-router.get('/tokens/summary', (req, res) => {
-  const since = sinceIso(req.query.range);
-  const totals = db.prepare(`
-    SELECT
-      COALESCE(SUM(tokens_input), 0) AS tokens_input,
-      COALESCE(SUM(tokens_output), 0) AS tokens_output,
-      COALESCE(SUM(cost_usd), 0) AS cost_usd
-    FROM token_usage WHERE recorded_at >= ?
-  `).get(since);
-
-  const byModel = db.prepare(`
-    SELECT model,
-      COALESCE(SUM(tokens_input), 0) AS tokens_input,
-      COALESCE(SUM(tokens_output), 0) AS tokens_output,
-      COALESCE(SUM(cost_usd), 0) AS cost_usd
-    FROM token_usage WHERE recorded_at >= ?
-    GROUP BY model ORDER BY cost_usd DESC
-  `).all(since);
-
-  const bySource = db.prepare(`
-    SELECT source,
-      COALESCE(SUM(tokens_input), 0) AS tokens_input,
-      COALESCE(SUM(tokens_output), 0) AS tokens_output,
-      COALESCE(SUM(cost_usd), 0) AS cost_usd
-    FROM token_usage WHERE recorded_at >= ?
-    GROUP BY source ORDER BY cost_usd DESC
-  `).all(since);
-
-  const daily = db.prepare(`
-    SELECT substr(recorded_at, 1, 10) AS day,
-      COALESCE(SUM(tokens_input), 0) AS tokens_input,
-      COALESCE(SUM(tokens_output), 0) AS tokens_output,
-      COALESCE(SUM(cost_usd), 0) AS cost_usd
-    FROM token_usage WHERE recorded_at >= ?
-    GROUP BY day ORDER BY day ASC
-  `).all(since);
-
-  res.json({ totals, byModel, bySource, daily });
-});
-
 // --- Tâches planifiées (agents) ---
 
 router.get('/jobs', (req, res) => {

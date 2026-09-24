@@ -5,11 +5,6 @@ function fmtTime(iso) {
   return d.toLocaleString('fr-FR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
 }
 
-function fmtDay(day) {
-  const d = new Date(day + 'T00:00:00');
-  return d.toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' });
-}
-
 function makeTooltip(container) {
   let el = container.querySelector(':scope > .chart-tooltip');
   if (!el) {
@@ -112,74 +107,6 @@ function renderLineChart(container, data, { width = 480, height = 160, yFormat =
     hitLayer.appendChild(hit);
   });
   svg.appendChild(hitLayer);
-
-  container.appendChild(svg);
-}
-
-// data: [{ label: string, value: number }]
-function renderBarChart(container, data, { width = 480, height = 160, yFormat = (v) => v } = {}) {
-  container.innerHTML = '';
-  container.classList.add('chart-wrap');
-
-  if (!data.length) {
-    container.innerHTML = '<div class="empty-state">Pas encore de données</div>';
-    return;
-  }
-
-  const padding = { top: 10, right: 10, bottom: 26, left: 36 };
-  const innerW = width - padding.left - padding.right;
-  const innerH = height - padding.top - padding.bottom;
-
-  const maxV = Math.max(...data.map((d) => d.value), 1);
-  const slice = innerW / data.length;
-  const barW = Math.max(Math.min(slice * 0.6, 36), 4);
-
-  const svgNS = 'http://www.w3.org/2000/svg';
-  const svg = document.createElementNS(svgNS, 'svg');
-  svg.setAttribute('viewBox', `0 0 ${width} ${height}`);
-  svg.setAttribute('class', 'chart');
-
-  const baseline = document.createElementNS(svgNS, 'line');
-  baseline.setAttribute('x1', padding.left);
-  baseline.setAttribute('x2', width - padding.right);
-  baseline.setAttribute('y1', padding.top + innerH);
-  baseline.setAttribute('y2', padding.top + innerH);
-  baseline.setAttribute('class', 'baseline');
-  svg.appendChild(baseline);
-
-  const tooltip = makeTooltip(container);
-
-  data.forEach((d, i) => {
-    const h = (d.value / maxV) * innerH;
-    const x = padding.left + i * slice + (slice - barW) / 2;
-    const y = padding.top + innerH - h;
-
-    const rect = document.createElementNS(svgNS, 'rect');
-    rect.setAttribute('x', x);
-    rect.setAttribute('y', y);
-    rect.setAttribute('width', barW);
-    rect.setAttribute('height', Math.max(h, 1));
-    rect.setAttribute('rx', 3);
-    rect.setAttribute('class', 'bar');
-    rect.addEventListener('mouseenter', () => {
-      tooltip.style.display = 'block';
-      tooltip.style.left = `${((x + barW / 2) / width) * 100}%`;
-      tooltip.style.top = `${(y / height) * 100}%`;
-      tooltip.innerHTML = `<strong>${yFormat(d.value)}</strong><br>${d.label}`;
-    });
-    rect.addEventListener('mouseleave', () => { tooltip.style.display = 'none'; });
-    svg.appendChild(rect);
-
-    if (data.length <= 12) {
-      const label = document.createElementNS(svgNS, 'text');
-      label.setAttribute('x', x + barW / 2);
-      label.setAttribute('y', height - 6);
-      label.setAttribute('text-anchor', 'middle');
-      label.setAttribute('class', 'axis-label');
-      label.textContent = d.label.length > 10 ? d.label.slice(0, 9) + '…' : d.label;
-      svg.appendChild(label);
-    }
-  });
 
   container.appendChild(svg);
 }

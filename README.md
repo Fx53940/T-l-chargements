@@ -1,8 +1,8 @@
 # Portail d'exploitation FTA
 
 Tableau de bord unique pour l'exploitation French Touch Attitude : état des
-connecteurs MCP, VPN Tailscale, serveur QNAP, historique des incidents et
-coût des tokens LLM. Remplace le mail récapitulatif quotidien par une
+connecteurs MCP, VPN Tailscale, serveur QNAP, tâches planifiées (agents) et
+historique des incidents. Remplace le mail récapitulatif quotidien par une
 consultation à la demande, avec historique.
 
 Auto-hébergé, pensé pour tourner sur le QNAP derrière le réseau Tailscale
@@ -102,21 +102,6 @@ curl -X POST http://<host>:3000/api/ingest/vpn-status \
     "name": "fta-brevo-mcp.tailfa9c06.ts.net",
     "status": "fail",
     "detail": "Échec DNS — cause externe probable"
-  }'
-```
-
-### Coût des tokens LLM
-
-```bash
-curl -X POST http://<host>:3000/api/ingest/token-usage \
-  -H "Authorization: Bearer $INGEST_API_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "source": "claude-code-session-infra",
-    "model": "claude-sonnet-5",
-    "tokens_input": 12000,
-    "tokens_output": 3400,
-    "cost_usd": 0.87
   }'
 ```
 
@@ -225,14 +210,6 @@ toutes les 5 à 15 minutes).
 Une fois ces appels en place et vérifiés (les connecteurs apparaissent
 sur le dashboard), le mail quotidien peut être réduit à une alerte de
 secours uniquement en cas d'indisponibilité prolongée, ou supprimé.
-
-### Suivi des coûts tokens
-
-Si vos sessions Claude (Claude Code, agents, etc.) journalisent déjà leur
-consommation (usage API), un petit script cron peut agréger ces logs et
-pousser un résumé quotidien ou horaire vers `/api/ingest/token-usage` —
-un enregistrement par (source, modèle, période) suffit, pas besoin de
-remonter chaque appel individuel.
 
 ## Sécurité
 
