@@ -4,6 +4,18 @@ const CATEGORY_LABEL = {
   other: 'Autre',
 };
 
+// Système d'icônes volontairement binaire : l'œil doit être attiré
+// uniquement par l'anomalie. Tout ce qui fonctionne normalement (y
+// compris "en cours") reste discret avec une horloge ; tout le reste
+// bascule sur un warning, quel que soit le type de problème.
+const ICON_NORMAL = '🕐';
+const ICON_WARNING = '⚠️';
+const NORMAL_STATES = new Set(['ok', 'running']);
+
+function stateIcon(state) {
+  return NORMAL_STATES.has(state) ? ICON_NORMAL : ICON_WARNING;
+}
+
 function statusClass(status) {
   return status === 'ok' ? 'ok' : status === 'fail' ? 'fail' : 'unknown';
 }
@@ -35,10 +47,6 @@ const JOB_STATE_LABEL = {
   running: 'EN COURS',
   never_run: 'JAMAIS EXÉCUTÉ',
 };
-const JOB_STATE_ICON = {
-  ok: '✓', late: '⏰', stuck: '⛔', fail: '✕', running: '↻', never_run: '–',
-};
-
 function durationSince(iso) {
   const mins = Math.round((Date.now() - new Date(iso).getTime()) / 60000);
   if (mins < 60) return `${mins} min`;
@@ -64,7 +72,7 @@ function renderStatusGrid(el, items, { nameKey = 'name', statusKey = 'status', s
       <div>
         <div class="label">${item[nameKey]}</div>
         <div class="meta">
-          <span class="status-text ${statusClass(item[statusKey])}">${statusText(item[statusKey])}</span>
+          <span class="status-text ${statusClass(item[statusKey])}">${stateIcon(item[statusKey])} ${statusText(item[statusKey])}</span>
           · ${subKey ? item[subKey] : relativeTime(item.last_seen)}
         </div>
       </div>
@@ -120,7 +128,7 @@ async function loadJobs() {
           <span class="job-name">${job.name}</span>
         </div>
         <div class="job-meta">
-          <span class="status-text ${state}">${JOB_STATE_ICON[state]} ${JOB_STATE_LABEL[state]}</span>
+          <span class="status-text ${state}">${stateIcon(state)} ${JOB_STATE_LABEL[state]}</span>
           · ${meta}
         </div>
         ${summary ? `<div class="job-summary">${summary}</div>` : ''}
