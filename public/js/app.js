@@ -117,6 +117,11 @@ async function loadJobs() {
       meta = `Dernière exécution ${relativeTime(lastRun.started_at)} · attendu tous les ${job.expected_interval_hours} h`;
     }
     const summary = lastRun && (lastRun.summary || lastRun.detail);
+    const successToday = job.success_today || 0;
+    const failureToday = job.failure_today || 0;
+    const countLabel = failureToday > 0
+      ? `${successToday} mise${successToday > 1 ? 's' : ''} à jour aujourd'hui · ${failureToday} échec${failureToday > 1 ? 's' : ''}`
+      : `${successToday} mise${successToday > 1 ? 's' : ''} à jour aujourd'hui`;
     return `
       <div class="job-card">
         <div class="job-head">
@@ -127,6 +132,7 @@ async function loadJobs() {
           <span class="status-text ${state}">${stateIcon(state)} ${JOB_STATE_LABEL[state]}</span>
           · ${meta}
         </div>
+        <div class="job-count">${countLabel}</div>
         ${summary ? `<div class="job-summary">${summary}</div>` : ''}
       </div>
     `;

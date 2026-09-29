@@ -114,11 +114,24 @@ router.get('/jobs', (req, res) => {
     const lastSuccess = db.prepare(`
       SELECT * FROM job_runs WHERE job_id = ? AND status = 'success' ORDER BY started_at DESC LIMIT 1
     `).get(job.id);
+    // Compteur du jour civil (heure du serveur, cf. TZ dans docker-compose) —
+    // utile pour un agent événementiel (ex: déclenché à chaque passage d'un
+    // prospect dans une étape de pipeline), où le volume du jour compte
+    // autant que le dernier statut.
+    const todayCounts = db.prepare(`
+      SELECT
+        SUM(CASE WHEN status = 'success' THEN 1 ELSE 0 END) AS success_today,
+        SUM(CASE WHEN status = 'failure' THEN 1 ELSE 0 END) AS failure_today
+      FROM job_runs
+      WHERE job_id = ? AND date(started_at, 'localtime') = date('now', 'localtime')
+    `).get(job.id);
     return {
       ...job,
       state: computeJobState(job, lastRun, lastSuccess),
       last_run: lastRun || null,
       last_success: lastSuccess || null,
+      success_today: todayCounts.success_today || 0,
+      failure_today: todayCounts.failure_today || 0,
     };
   });
   res.json(result);

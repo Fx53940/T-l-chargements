@@ -47,6 +47,7 @@ SQLite). Aucune donnée n'est perdue lors d'un redémarrage du conteneur.
 ```bash
 npm install
 cp .env.example .env   # puis éditer .env
+export TZ=Europe/Paris # les compteurs "aujourd'hui" dépendent du fuseau horaire du process
 npm start
 ```
 
@@ -167,6 +168,42 @@ cette durée alors qu'une exécution est en cours, le job passe à
 (normal pour un job à phases) de "il s'est arrêté en silence au milieu".
 Ne pas renseigner ce champ pour un job court : sans lui, un job "en cours"
 reste simplement affiché comme tel, sans alerte de blocage.
+
+### Job événementiel : déclenché par une action métier, pas par une horloge
+
+Adapté à un agent qui ne tourne pas à heure fixe mais réagit à un
+évènement — ex. un agent qui, à chaque fois qu'un prospect entre dans
+l'étape "Envoie lien de formation" d'un pipeline CRM, met à jour l'année
+et le type de formation puis envoie le lien. La fréquence dépend du flux
+de prospects, pas d'un horaire : on utilise le même rapport en un appel
+que pour un job court, à chaque exécution.
+
+```bash
+curl -X POST http://<host>:3000/api/ingest/job-runs \
+  -H "Authorization: Bearer $INGEST_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "job_id": "cefomep-envoi-lien-formation",
+    "job_name": "Envoi lien de formation (CEFOMEP)",
+    "status": "success",
+    "summary": "Année 2026, type Bilan de compétences — lien envoyé",
+    "expected_interval_hours": 48
+  }'
+```
+
+Deux différences avec le job "rapprochement factures" :
+- **`expected_interval_hours` plus large** (48h ou plus, à ajuster selon
+  votre volume réel de prospects) : un job événementiel a des trous
+  normaux (pas de prospect = pas d'exécution), il ne faut pas déclencher
+  **EN RETARD** à chaque creux d'activité — seulement sur un silence
+  anormalement long.
+- **Le dashboard affiche un compteur du jour** (nombre de succès/échecs
+  depuis minuit, heure de Paris) en plus du dernier statut, puisque pour
+  ce type d'agent le volume quotidien compte autant que la santé
+  ponctuelle.
+
+Appeler cette route à **chaque** exécution (succès ou échec) — c'est ce
+qui alimente le compteur, pas seulement la détection de panne.
 
 États affichés sur le dashboard : **OK**, **EN RETARD** (pas de succès
 récent), **BLOQUÉ** (en cours mais plus de battement), **ÉCHEC**, **EN

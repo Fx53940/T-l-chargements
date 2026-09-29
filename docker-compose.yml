@@ -12,6 +12,9 @@ services:
       DASHBOARD_USER: ${DASHBOARD_USER}
       DASHBOARD_PASS: ${DASHBOARD_PASS}
       DATA_DIR: /app/data
+      # Nécessaire pour que les compteurs "aujourd'hui" (tâches planifiées)
+      # se basent sur le jour civil français plutôt que sur UTC.
+      TZ: ${TZ:-Europe/Paris}
     volumes:
       - fta-ops-data:/app/data
 

@@ -194,10 +194,16 @@ section.panel .panel-sub {
   font-size: 11px;
   margin-top: 6px;
 }
+.job-card .job-count {
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 600;
+  margin-top: 8px;
+}
 .job-card .job-summary {
   color: var(--text-secondary);
   font-size: 12px;
-  margin-top: 6px;
+  margin-top: 4px;
 }
 .job-list {
   display: grid;
