@@ -7,7 +7,7 @@ Python 3.9+, **aucune dépendance** (bibliothèque standard). Le schéma de la b
 ## Installation sur le VPS
 ```bash
 cd veille-certifications
-python3 -m unittest discover -s tests            # 14 tests, doivent passer
+python3 -m unittest discover -s tests            # 17 tests, doivent passer
 python3 veille_rncp_rs.py importer --db /var/lib/veille/veille.db   # 1er import = base de référence (~30 s, ~90 Mo téléchargés)
 ```
 Planification quotidienne (l'export est publié vers 2 h UTC) :
@@ -44,6 +44,7 @@ CSV en UTF-8 avec BOM, séparateur `;` (ouverture directe dans Excel).
 - **Premier import** : base de référence, aucun événement (sinon 30 000 « nouveautés »). Ses fiches portent `fiche_de_reference = 1` : leur vraie date d'apparition est la date de décision officielle. Les événements commencent au deuxième import.
 - **Une fiche absente de l'export du jour** est marquée `disparue` ; si elle revient : événement `retour`.
 - Un téléchargement coupé est repris (en-tête `Range`).
+- **Adresses de téléchargement :** seules les adresses `https` de `data.gouv.fr` et de ses sous-domaines (`static.data.gouv.fr`…), sans identifiants intégrés, sont suivies ; toute autre adresse trouvée dans la liste des fichiers est ignorée (contrôle ajouté à l'installation sur le VPS).
 
 ## Vérifications effectuées (export du 15/10/2026)
 - 30 689 fiches (25 778 RNCP, 4 911 RS), 6 578 actives, 5 350 entreprises, 6 070 établissements. Import complet en 30 s, base de 69 Mo.

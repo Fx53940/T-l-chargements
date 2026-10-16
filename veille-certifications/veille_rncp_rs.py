@@ -112,6 +112,17 @@ def http_get(url, dest, retries=8, timeout=60):
     raise RuntimeError(f"échec du téléchargement : {url}")
 
 
+def url_autorisee(url):
+    """Seules les adresses https de data.gouv.fr et de ses sous-domaines (static.data.gouv.fr…) sont suivies."""
+    try:
+        p = urlparse(url or "")
+        h = (p.hostname or "").lower()
+    except ValueError:
+        return False
+    return (p.scheme == "https" and p.username is None and p.password is None
+            and (h == "data.gouv.fr" or h.endswith(".data.gouv.fr")))
+
+
 def trouver_exports(date=None):
     """Retourne (date, url_rncp, url_rs) du dernier export v4.1 publié sur data.gouv.fr."""
     tmp = tempfile.NamedTemporaryFile(suffix=".json", delete=False)
@@ -121,16 +132,20 @@ def trouver_exports(date=None):
         res = json.load(open(tmp.name, encoding="utf-8"))["resources"]
     finally:
         os.unlink(tmp.name)
-    trouves = {}
+    trouves, refusees = {}, 0
     for r in res:
         t = r["title"]
         for rep in ("rncp", "rs"):
             pref = f"export-fiches-{rep}-{SCHEMA_EXPORT}-"
             if t.startswith(pref) and t.endswith(".zip"):
+                if not url_autorisee(r["url"]):
+                    refusees += 1
+                    continue
                 trouves.setdefault(t[len(pref):-4], {})[rep] = r["url"]
     dates = sorted(d for d, v in trouves.items() if len(v) == 2 and (date is None or d == date))
     if not dates:
-        raise RuntimeError("aucun export RNCP+RS v4.1 trouvé" + (f" pour {date}" if date else ""))
+        raise RuntimeError("aucun export RNCP+RS v4.1 trouvé" + (f" pour {date}" if date else "")
+                           + (f" ({refusees} adresse(s) refusée(s) : seules les adresses https de data.gouv.fr sont acceptées)" if refusees else ""))
     d = dates[-1]
     return d, trouves[d]["rncp"], trouves[d]["rs"]
 
