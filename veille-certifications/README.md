@@ -40,7 +40,7 @@ CSV en UTF-8 avec BOM, séparateur `;` (ouverture directe dans Excel).
 ## Règles
 - **Leader d'une certification co-certifiée** (règles validées) : 1) l'entreprise dont le site correspond au lien de la fiche ; 2) sinon celle qui a le plus de certifications actives ; 3) sinon **sans leader** (`indetermine`). Tous les organismes restent contactables.
 - **Site web** : déduit des fiches à **un seul** certificateur. Un domaine est retenu s'il pèse au moins 70 % des fiches de l'entreprise et n'est pas un portail (France compétences, Legifrance, réseaux sociaux…) ni partagé par plus de 3 entreprises. Sinon, l'entreprise va dans la file `site_ambigu`.
-- **Ministères** : exclus via `exclusions.csv` (liste de SIREN, plus un repérage par le nom pour les seuls certificateurs sans SIRET). **Toutes les règles sont livrées au statut `a_valider` et ne sont donc pas appliquées** tant que la colonne `statut` n'est pas passée à `valide`. `--appliquer-a-valider` permet de mesurer leur effet avant validation.
+- **Ministères** : exclus via `exclusions.csv` (liste de SIREN, plus un repérage par le nom pour les seuls certificateurs sans SIRET). Les 20 règles ont été **validées par la direction le 16/10/2026** (statut `valide`). Une règle au statut `a_valider` n'est pas appliquée ; `--appliquer-a-valider` permet de mesurer l'effet d'une règle avant de la valider.
 - **Premier import** : base de référence, aucun événement (sinon 30 000 « nouveautés »). Ses fiches portent `fiche_de_reference = 1` : leur vraie date d'apparition est la date de décision officielle. Les événements commencent au deuxième import.
 - **Une fiche absente de l'export du jour** est marquée `disparue` ; si elle revient : événement `retour`.
 - Un téléchargement coupé est repris (en-tête `Range`).
